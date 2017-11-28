@@ -37,3 +37,10 @@ for(imgl of img){
 
 }
 
+
+Regex search in atom tips
+
+^(.*?)$
+
+"$1",
+
