@@ -1,0 +1,79 @@
+---manifest.json---
+{
+  "manifest_version": 2,
+  "name": "Word Definition",
+  "version": "0.01",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "default_icon": "word.png",
+    "default_popup": "popup.html",
+    "default_title": "Popup created for word definition"
+  }
+
+}
+
+---content.js---
+window.addEventListener('mouseup', mouseSelect);
+
+function mouseSelect(){
+  let word = window.getSelection().toString().trim();
+  let msg = {
+    text: word
+  };
+  if(word.length > 0){
+    chrome.runtime.sendMessage(msg);
+  }
+}
+
+---background.js---
+chrome.runtime.onMessage.addListener(receiver);
+window.receivedWord = "sample";
+function receiver(request, sender, sendResponse){
+    window.receivedWord  = request.text;
+}
+
+---popup.html---
+<body>
+
+    <h4>Word Definition</h4>
+
+    <p id="definition"></p>
+
+<script src="popup.js" charset="utf-8"></script>
+</body>
+
+---popup.js---
+let msg = chrome.extension.getBackgroundPage();
+let recieved = msg.receivedWord;
+
+var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      var status = xhr.status;
+      if (status === 200) {
+        callback(null, xhr.response);
+      } else {
+        callback(status, xhr.response);
+      }
+    };
+    xhr.send();
+};
+
+let url = `http://api.wordnik.com:80/v4/word.json/
+${recieved}
+/definitions?limit=200&includeRelated=false&sourceDictionaries=all&useCanonical=false&includeTags=false&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5`;
+
+getJSON(url,
+function(err, data) {
+  document.getElementById('definition').innerHTML = data[0].text;
+});
